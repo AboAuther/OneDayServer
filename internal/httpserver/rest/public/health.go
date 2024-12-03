@@ -8,16 +8,6 @@ import (
 	"one-day-server/response"
 )
 
-const (
-	UPTIME_ROBOT_RESPONSE_KEY   = "GATEWAY:uptimerobot:status"
-	UPTIME_ROBOT_RESET          = "GATEWAY:uptimerobot:reset"
-	ERROR_MSG                   = "Request Failed"
-	RESET_THRESHOLD             = 5
-	HTTP_TIMEOUT_SECONDS        = 5
-	REDIS_TIMEOUT_SECONDS       = 1
-	RESPONSE_CACHE_TIME_SECONDS = 60
-)
-
 type TimeResponse struct {
 	ServerTime int64 `json:"serverTime"`
 }
@@ -30,8 +20,4 @@ type TimeResponse struct {
 // @Router       /api/v1/gateway/public/time [get]
 func Time(c *gin.Context) {
 	response.SendSuccess(c, &TimeResponse{ServerTime: time.Now().UnixMilli()})
-}
-
-func CreateUser(c *gin.Context) {
-
 }

@@ -56,3 +56,5 @@ func MustGetEnv(key string) string {
 	}
 	return env
 }
+
+var JWTSecret = []byte(GetEnvDefault("SERVER_JWT_SECRET", "")) // 替换为更强的密钥

@@ -48,6 +48,31 @@ var (
 		Message:        "Unauthorized API key",
 		HttpStatusCode: 401,
 	}
+
+	UnauthorizedUserPassword = ErrorCode{
+		Code:           "10006",
+		Message:        "Unauthorized user password",
+		HttpStatusCode: 401,
+	}
+
+	UnauthorizedJWTAccessToken = ErrorCode{
+		Code:           "10007",
+		Message:        "Invalid or expired access token",
+		HttpStatusCode: 401,
+	}
+
+	UnauthorizedJWTRefreshToken = ErrorCode{
+		Code:           "100014",
+		Message:        "Invalid or expired refresh token",
+		HttpStatusCode: 401,
+	}
+
+	InvalidJWTTokenClaims = ErrorCode{
+		Code:           "10015",
+		Message:        "Invalid jwt token claims",
+		HttpStatusCode: 401,
+	}
+
 	ApiNotFound = ErrorCode{
 		Code:           "10008",
 		Message:        "API not found",
@@ -138,6 +163,12 @@ var (
 	InvalidRequestBody = ErrorCode{
 		Code:           "11012",
 		Message:        "Invalid request body",
+		HttpStatusCode: 400,
+	}
+
+	UserNotFound = ErrorCode{
+		Code:           "11013",
+		Message:        "User not found",
 		HttpStatusCode: 400,
 	}
 )

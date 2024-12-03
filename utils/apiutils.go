@@ -18,6 +18,7 @@ const (
 	UserInContext                 = "userInContext"
 	OneDayAPIIPRateLimitRemaining = "ONE-DAY-API-IP-RATE-LIMIT-REMAINING"
 	UserApiPrefix                 = "/api/v1/oneDay/user"
+	OneDayAuthorization           = "Authorization"
 )
 
 func SortQueryString(rawQuery string) string {

@@ -1,54 +1,25 @@
 package management
 
-import (
-	logger "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
-
-	"one-day-server/internal/db/mysql"
-)
+import "errors"
 
 var (
-	users = make(map[string]*User)
+	usernameToUser = make(map[string]*User)
+	phoneToUser    = make(map[string]*User)
+	uidToUser      = make(map[int64]*User)
+
+	UserNotExist = errors.New("user not exist")
 )
 
-func GetUserByAPIKey(apiKey string) *User {
-	if userInMem, ok := users[apiKey]; !ok {
-		user := &User{}
-		if err := mysql.DB().Where("api_key = ?", apiKey).First(user).Error; err != nil {
-			if err != gorm.ErrRecordNotFound {
-				logger.Errorf("get %s api sercret failed, err: %s, obtain user from CORE", apiKey, err)
-			} else {
-				logger.Infof("get empty user: %s, obtain user from CORE", apiKey)
-			}
-			//secret = getUserAPISecretFromCore(apiKey)
-			if user.Secret == "" {
-				return nil
-			}
-		}
-		users[user.APIKey] = user
-		return user
-	} else {
-		return userInMem
-	}
-}
-
-func GetUserAddressByAPIKey(apiKey string) string {
-	return users[apiKey].Address
-}
-
-type UserSignData struct {
-	Secret    string
-	Body      string
-	Timestamp int64
-}
-
 type User struct {
-	Id        int64         `gorm:"column:user_id"`    //
-	Address   string        `gorm:"column:address"`    //
-	VesselKey string        `gorm:"column:vessel_key"` //
-	APIKey    string        `gorm:"column:api_key"`    //
-	Secret    string        `gorm:"column:secret"`     //
-	SignData  *UserSignData `gorm:"-:all"`             // only be used in memory
+	Id           int64  `gorm:"column:user_id"` //
+	Username     string `gorm:"column:username"`
+	Password     string `gorm:"column:password"`
+	Email        string `gorm:"column:email"`
+	Phone        string `gorm:"column:phone"`
+	Gender       string `gorm:"column:gender"`
+	Age          int    `gorm:"column:age"`
+	IsVip        bool   `gorm:"column:is_vip"`
+	RefreshToken string `gorm:"column:refresh_token"`
 }
 
 func (m *User) TableName() string {
@@ -58,4 +29,25 @@ func (m *User) TableName() string {
 func AddUser(user *User) error {
 
 	return nil
+}
+
+func GetUserByUsername(username string) (*User, error) {
+	if user, ok := usernameToUser[username]; ok {
+		return user, nil
+	}
+	return nil, UserNotExist
+}
+
+func GetUserByPhone(phone string) (*User, error) {
+	if user, ok := phoneToUser[phone]; ok {
+		return user, nil
+	}
+	return nil, UserNotExist
+}
+
+func GetUserByUid(uid int64) (*User, error) {
+	if user, ok := uidToUser[uid]; ok {
+		return user, nil
+	}
+	return nil, UserNotExist
 }

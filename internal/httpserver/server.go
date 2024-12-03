@@ -58,7 +58,7 @@ func NewOneDayServer() (*OneDayServer, error) {
 	publicGroup := ginEngine.Group("/api/v1/oneDay/public")
 	{
 		publicGroup.GET("/timestamp", public.Time)
-		publicGroup.POST("/user", public.CreateUser)
+		publicGroup.POST("/user", public.RegisterUser)
 	}
 
 	ginEngine.GET("/api/v1/oneDay/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
