@@ -10,12 +10,6 @@ import (
 	"github.com/golang-cz/nilslice"
 )
 
-type ErrorCode struct {
-	Code           string
-	Message        string
-	HttpStatusCode int `json:"-"`
-}
-
 var (
 	// General Errors
 	InternalServerError = ErrorCode{
@@ -61,18 +55,6 @@ var (
 		HttpStatusCode: 401,
 	}
 
-	UnauthorizedJWTRefreshToken = ErrorCode{
-		Code:           "100014",
-		Message:        "Invalid or expired refresh token",
-		HttpStatusCode: 401,
-	}
-
-	InvalidJWTTokenClaims = ErrorCode{
-		Code:           "10015",
-		Message:        "Invalid jwt token claims",
-		HttpStatusCode: 401,
-	}
-
 	ApiNotFound = ErrorCode{
 		Code:           "10008",
 		Message:        "API not found",
@@ -102,6 +84,24 @@ var (
 		Code:           "10013",
 		Message:        "Invalid admin address",
 		HttpStatusCode: 400,
+	}
+
+	UnauthorizedJWTRefreshToken = ErrorCode{
+		Code:           "100014",
+		Message:        "Invalid or expired refresh token",
+		HttpStatusCode: 401,
+	}
+
+	InvalidJWTTokenClaims = ErrorCode{
+		Code:           "10015",
+		Message:        "Invalid jwt token claims",
+		HttpStatusCode: 401,
+	}
+
+	InvalidJWTTokenFormat = ErrorCode{
+		Code:           "10016",
+		Message:        "Invalid jwt token format, must start with 'Bearer '",
+		HttpStatusCode: 401,
 	}
 
 	// Header and Parameter Errors
@@ -172,6 +172,12 @@ var (
 		HttpStatusCode: 400,
 	}
 )
+
+type ErrorCode struct {
+	Code           string
+	Message        string
+	HttpStatusCode int `json:"-"`
+}
 
 // GetMessage 获取格式化的错误消息
 func (e *ErrorCode) GetMessage(params ...interface{}) string {

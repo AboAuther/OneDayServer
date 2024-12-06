@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/go-redis/redis_rate/v10"
 
@@ -39,7 +40,7 @@ type IClient interface {
 	// redis KV
 	GetResult(ctx context.Context, key string) (string, error)
 	WriteResult(ctx context.Context, key, value string) error
-
+	WriteResultWithTTL(ctx context.Context, key, value string, ttl time.Duration) error
 	GetRateLimiter() *redis_rate.Limiter
 
 	// no need to wrap all the methods, allow expose client to outer package
@@ -88,6 +89,21 @@ func (rc *RedisClient) WriteResult(ctx context.Context, key, value string) error
 	var err error
 	for retry > 0 {
 		err = rc.rdb.Set(ctx, key, value, 0).Err()
+		if err != nil {
+			logger.Errorf("write to redis %s failed, value: %s, err: %s", key, value, err)
+			retry--
+			continue
+		}
+		break
+	}
+	return err
+}
+
+func (rc *RedisClient) WriteResultWithTTL(ctx context.Context, key, value string, ttl time.Duration) error {
+	retry := 3
+	var err error
+	for retry > 0 {
+		err = rc.rdb.Set(ctx, key, value, ttl).Err()
 		if err != nil {
 			logger.Errorf("write to redis %s failed, value: %s, err: %s", key, value, err)
 			retry--

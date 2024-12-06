@@ -10,9 +10,14 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"one-day-server/configs"
+	internalRedis "one-day-server/internal/db/redis"
 	"one-day-server/internal/httpserver/middleware"
 	"one-day-server/internal/httpserver/middleware/cache"
+	"one-day-server/internal/httpserver/rest"
 	"one-day-server/internal/httpserver/rest/public"
+	publicUser "one-day-server/internal/httpserver/rest/public/user"
+
+	"one-day-server/internal/httpserver/rest/user"
 	"one-day-server/response"
 )
 
@@ -48,17 +53,22 @@ func NewOneDayServer() (*OneDayServer, error) {
 		response.SendError(c, response.RequestMethodNotAllowed)
 	})
 
+	rest.RegisterRedisClient(internalRedis.GetClient())
+
 	ginEngine.Use(cache.Instance.UseCache)
 	userGroup := ginEngine.Group("/api/v1/oneDay/user")
 	userGroup.Use(middleware.ValidateUserAuth)
 	{
-
+		userGroup.POST("/refreshToken", user.RefreshToken)
+		userGroup.POST("/updateUserProfile", user.UpdateUserProfile)
 	}
 
 	publicGroup := ginEngine.Group("/api/v1/oneDay/public")
 	{
 		publicGroup.GET("/timestamp", public.Time)
 		publicGroup.POST("/user", public.RegisterUser)
+		publicGroup.POST("/user/login", publicUser.LoginUser)
+		publicGroup.POST("/user/logout", publicUser.LoginUser)
 	}
 
 	ginEngine.GET("/api/v1/oneDay/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

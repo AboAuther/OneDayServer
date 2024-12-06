@@ -3,7 +3,9 @@ package main
 import (
 	log "github.com/sirupsen/logrus"
 
+	"one-day-server/internal/db/mysql"
 	"one-day-server/internal/httpserver"
+	"one-day-server/internal/management"
 )
 
 // @title           Swagger Example API
@@ -24,7 +26,8 @@ import (
 // SwaggerUI: http://localhost:8049/swagger/index.html
 func main() {
 	log.Infof("start gateway server")
-	//mysql.Init()
+	mysql.Init()
+	management.Init()
 
 	server, err := httpserver.NewOneDayServer()
 	if err != nil {
