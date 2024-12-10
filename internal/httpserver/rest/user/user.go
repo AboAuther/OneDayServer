@@ -6,66 +6,57 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	logger "github.com/sirupsen/logrus"
 
 	"one-day-server/configs"
 	"one-day-server/internal/httpserver/rest"
 	"one-day-server/internal/management"
 	"one-day-server/response"
+	"one-day-server/utils"
 )
-
-func isBlacklisted(jti string) bool {
-	ctx := context.Background()
-	val, err := rest.RedisClient.GetResult(ctx, "blacklist:"+jti)
-	return err == nil && val == "1"
-}
 
 func addToBlacklist(jti string, exp time.Time) error {
 	ctx := context.Background()
 	ttl := time.Until(exp)
+	if ttl <= 0 {
+		return fmt.Errorf("token already expired")
+	}
 	return rest.RedisClient.WriteResultWithTTL(ctx, "blacklist:"+jti, "1", ttl)
 }
 
 func LogOut(c *gin.Context) {
 	accessTokenJTI, exists := c.Get("jti")
+	uid := c.GetInt64("uid")
 	if !exists {
 		response.SendError(c, response.InvalidJWTTokenClaims)
 		return
 	}
 
-	// 获取 Refresh Token 的 jti（假设它来自请求头或 cookie 中）
+	// get Refresh Token jti
 	refreshToken := c.GetHeader("Refresh-Token")
 	if refreshToken == "" {
 		response.SendError(c, response.MissingRequiredHeader, "Refresh-Token")
 		return
 	}
 
-	refreshTokenObj, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return configs.JWTSecret, nil
-	})
-
-	if err != nil || !refreshTokenObj.Valid {
+	refreshClaims, err := utils.ParseJWT(refreshToken, configs.JWTSecret)
+	if err != nil {
+		logger.Errorf("failed to parse refresh token for user %d: %v", uid, err)
 		response.SendError(c, response.UnauthorizedJWTRefreshToken)
 		return
 	}
 
-	// 获取 Refresh Token 的 jti
-	refreshClaims, ok := refreshTokenObj.Claims.(jwt.MapClaims)
+	refreshTokenJTI, ok := refreshClaims["jti"].(string)
 	if !ok || refreshClaims["jti"] == nil {
+		logger.Errorf("refresh token missing jti for user %d", uid)
 		response.SendError(c, response.InvalidJWTTokenClaims)
 		return
 	}
-	refreshTokenJTI := refreshClaims["jti"].(string)
 
-	// 获取 Access Token 和 Refresh Token 的过期时间
-	accessExp := time.Unix(int64(refreshClaims["exp"].(float64)), 0)
+	// get Access Token and Refresh Token expired time
+	accessExp := time.Unix(c.GetInt64("exp"), 0)
 	refreshExp := time.Unix(int64(refreshClaims["exp"].(float64)), 0)
 
-	// 添加到 Redis 黑名单
 	if err := addToBlacklist(accessTokenJTI.(string), accessExp); err != nil {
 		logger.Errorf("failed to blacklist access token jti: %v", err)
 		response.SendError(c, response.InternalServerError)
@@ -78,12 +69,11 @@ func LogOut(c *gin.Context) {
 		return
 	}
 
-	// 返回成功响应
-	c.JSON(200, gin.H{"message": "Logout successful"})
+	response.SendSuccessMessage(c)
 }
 
 type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required"`
+	RefreshToken string `json:"refreshToken" binding:"required"`
 }
 
 func RefreshToken(c *gin.Context) {
@@ -94,25 +84,15 @@ func RefreshToken(c *gin.Context) {
 	}
 
 	// validate Refresh Token
-	token, err := jwt.Parse(req.RefreshToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return configs.JWTSecret, nil
-	})
-	if err != nil || !token.Valid {
-		response.SendError(c, response.UnauthorizedJWTAccessToken)
-		return
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || claims["uid"] == nil {
-		response.SendError(c, response.InvalidJWTTokenClaims)
-		return
-	}
-
-	user, err := management.GetUserByUid(claims["uid"].(int64))
+	tokenClaims, err := utils.ParseJWT(req.RefreshToken, configs.JWTSecret)
 	if err != nil {
+		response.SendError(c, response.UnauthorizedJWTRefreshToken)
+		return
+	}
+
+	user, err := management.GetUserByUid(int64(tokenClaims["uid"].(float64)))
+	if err != nil {
+		logger.Errorf("get uid from refresh token claims failed, claims: %v, err: %v", tokenClaims, err)
 		response.SendError(c, response.UserNotFound)
 		return
 	}

@@ -80,11 +80,6 @@ var (
 		Message:        "Internal maintaining",
 		HttpStatusCode: 500,
 	}
-	AdminAddressNotMatch = ErrorCode{
-		Code:           "10013",
-		Message:        "Invalid admin address",
-		HttpStatusCode: 400,
-	}
 
 	UnauthorizedJWTRefreshToken = ErrorCode{
 		Code:           "100014",
@@ -101,6 +96,12 @@ var (
 	InvalidJWTTokenFormat = ErrorCode{
 		Code:           "10016",
 		Message:        "Invalid jwt token format, must start with 'Bearer '",
+		HttpStatusCode: 401,
+	}
+
+	UnauthorizedJWTAccessTokenExpired = ErrorCode{
+		Code:           "10016",
+		Message:        "Invalid jwt token, access token expired",
 		HttpStatusCode: 401,
 	}
 
@@ -219,6 +220,7 @@ func Fail(code ErrorCode, params ...interface{}) interface{} {
 
 func SendError(c *gin.Context, code ErrorCode, params ...interface{}) {
 	c.JSON(code.HttpStatusCode, Fail(code, params...))
+	c.Abort()
 }
 
 func SendInternalServerError(c *gin.Context) {
@@ -227,6 +229,12 @@ func SendInternalServerError(c *gin.Context) {
 
 func SendSuccess(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, nilslice.Initialize(data))
+}
+
+func SendSuccessMessage(c *gin.Context) {
+	c.JSON(http.StatusOK, nilslice.Initialize(map[string]interface{}{
+		"message": "success",
+	}))
 }
 
 func SendSuccessWithAny(c *gin.Context, data any) {

@@ -54,7 +54,7 @@ func AddUser(user *User) error {
 }
 
 func UpdateUser(user *User) error {
-	if err := mysql.DB().Model(&User{}).Debug().Where(user).Updates(user).Error; err != nil {
+	if err := mysql.DB().Model(&User{}).Debug().Where(user.Id).Updates(user).Error; err != nil {
 		return fmt.Errorf("create user failed, err: %s", err)
 	}
 	return nil
