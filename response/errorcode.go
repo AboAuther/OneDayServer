@@ -105,6 +105,17 @@ var (
 		HttpStatusCode: 401,
 	}
 
+	SMSDeliveryFailed = ErrorCode{
+		Code:           "10017",
+		Message:        "SMS delivery failed",
+		HttpStatusCode: 500,
+	}
+	InvalidOrExpiredVerificationCode = ErrorCode{
+		Code:           "10018",
+		Message:        "Invalid or expired verification code",
+		HttpStatusCode: 401,
+	}
+
 	// Header and Parameter Errors
 	MissingRequiredHeader = ErrorCode{
 		Code:           "11001",

@@ -7,8 +7,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	logger "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 
 	"one-day-server/configs"
+	"one-day-server/internal/httpserver/middleware/sms"
 	"one-day-server/internal/httpserver/rest"
 	"one-day-server/internal/management"
 	"one-day-server/response"
@@ -149,4 +151,48 @@ func UpdateUserProfile(c *gin.Context) {
 		return
 	}
 	response.SendSuccess(c, user)
+}
+
+func ChangePassword(c *gin.Context) {
+	var request struct {
+		Phone            string `json:"phone" binding:"required"`
+		VerificationCode string `json:"verificationCode" binding:"required"`
+		NewPassword      string `json:"password" binding:"required,min=8"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		response.SendError(c, response.InvalidRequestBody)
+		return
+	}
+
+	// verify user code
+	if err := sms.VerifyUserCode(request.Phone, request.VerificationCode); err != nil {
+		logger.Errorf("verification failed for phone: %s, err: %v", request.Phone, err)
+		response.SendError(c, response.InvalidOrExpiredVerificationCode)
+		return
+	}
+
+	// get user
+	user, err := management.GetUserByPhone(request.Phone)
+	if err != nil {
+		logger.Errorf("user not found for phone: %s, err: %v", request.Phone, err)
+		response.SendError(c, response.UserNotFound)
+		return
+	}
+
+	// encrypt password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		logger.Errorf("hash password failed, err: %v", err)
+		response.SendInternalServerError(c)
+		return
+	}
+
+	err = management.UpdateUserPassword(user, string(hashedPassword))
+	if err != nil {
+		logger.Errorf("failed to update user password: %v", err)
+		response.SendError(c, response.InternalServerError)
+		return
+	}
+
+	response.SendSuccessMessage(c)
 }

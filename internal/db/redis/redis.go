@@ -42,9 +42,14 @@ type IClient interface {
 	WriteResult(ctx context.Context, key, value string) error
 	WriteResultWithTTL(ctx context.Context, key, value string, ttl time.Duration) error
 	GetRateLimiter() *redis_rate.Limiter
+	Delete(ctx context.Context, key string) error
 
 	// no need to wrap all the methods, allow expose client to outer package
 	GetRDB() *redis.Client
+}
+
+func (rc *RedisClient) Delete(ctx context.Context, key string) error {
+	return rc.rdb.Del(ctx, key).Err()
 }
 
 type RedisClient struct {

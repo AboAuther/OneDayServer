@@ -62,9 +62,18 @@ func UpdateUser(user *User) error {
 
 func UpdateUserRefreshToken(user *User, refreshToken string) error {
 	if err := mysql.DB().Model(&User{}).Debug().Where(user).Update("refresh_token", refreshToken).Error; err != nil {
-		return fmt.Errorf("create user failed, err: %s", err)
+		return fmt.Errorf("update user refresh token failed, err: %s", err)
 	}
 	user.RefreshToken = refreshToken
+
+	return nil
+}
+
+func UpdateUserPassword(user *User, password string) error {
+	if err := mysql.DB().Model(&User{}).Debug().Where(user).Update("password", password).Error; err != nil {
+		return fmt.Errorf("update user password failed, err: %s", err)
+	}
+	user.Password = password
 
 	return nil
 }

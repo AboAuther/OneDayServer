@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"fmt"
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	logger "github.com/sirupsen/logrus"
@@ -32,4 +35,14 @@ func CleanHexString(input string) string {
 	} else {
 		return strings.TrimPrefix(input, HexPrefix)
 	}
+}
+
+func GenerateRandomCode(length int) string {
+	rand.Seed(time.Now().UnixNano())
+	min := int64(1)
+	for i := 1; i < length; i++ {
+		min *= 10
+	}
+	max := min*10 - 1
+	return fmt.Sprintf("%0*d", length, rand.Int63n(max-min+1)+min)
 }
